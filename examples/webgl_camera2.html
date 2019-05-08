@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>three.js webgl - cameras</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		body {
+			color: #808080;
+			font-family: Monospace;
+			font-size: 13px;
+			text-align: center;
+
+			background-color: #000;
+			margin: 0px;
+			overflow: hidden;
+		}
+
+		#info {
+			position: absolute;
+			top: 5px;
+			width: 100%;
+			z-index: 100;
+		}
+
+		a {
+			color: #0080ff;
+		}
+
+		b {
+			color: lightgreen
+		}
+	</style>
+</head>
+
+<body>
+
+	<script src="../build/three.js"></script>
+	<script src="./js/controls/OrbitControls.js"></script>
+	<!-- <script src="js/libs/stats.min.js"></script> -->
+
+	<script>
+
+		var SCREEN_WIDTH = window.innerWidth;
+		var SCREEN_HEIGHT = window.innerHeight;
+		var aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+
+		var container;
+		var camera, scene, renderer, whiteBall;
+		var cameraRig;
+		var cameraPerspective;
+		var cameraPerspectiveHelper;
+
+		init();
+		animate();
+
+		function init() {
+
+			container = document.createElement('div');
+			document.body.appendChild(container);
+
+			scene = new THREE.Scene();
+			//
+			// 远距离相机，查看整个场景，相机角度
+			camera = new THREE.PerspectiveCamera(50,
+				0.5 * aspect, 1, 10000);
+			camera.position.z = 1500;
+
+			//查看模型的相机
+			cameraPerspective = new THREE.PerspectiveCamera(50,
+				0.5 * aspect, 150, 1000);
+			cameraPerspective.position.set(0, 0, 1)
+			cameraPerspectiveHelper = new THREE.CameraHelper(cameraPerspective);
+			scene.add(cameraPerspectiveHelper);
+
+
+
+			// counteract different front orientation of cameras vs rig
+
+			cameraPerspective.rotation.y = Math.PI;
+			scene.add(new THREE.AxisHelper(150))
+			cameraRig = new THREE.Group();
+			cameraRig.add(cameraPerspective);
+			cameraRig.add(new THREE.AxisHelper(40))
+			cameraRig.position.set(100,0,0)
+			scene.add(cameraRig);
+
+			//grand
+			var grand = new THREE.Mesh(new THREE.PlaneBufferGeometry(200, 200),
+				new THREE.MeshPhongMaterial({ depthWrite: false, alpha: true }))
+			grand.rotation.x = -Math.PI / 2
+			grand.receiveShadow = true
+			scene.add(grand)
+
+			var grid = new THREE.GridHelper(100, 5, 0xFF0000, 0x000000)
+			grid.material.opacity = 0.2
+			grid.material.transparent = true
+			scene.add(grid)
+
+			var light = new THREE.DirectionalLight(0xFFCCCC)
+			light.position.set(-60, 60, 60)
+			light.name = 'light'
+			light.shadow.camera.top = 180
+			light.shadow.camera.bottom = -100
+			light.shadow.camera.left = -120
+			light.shadow.camera.right = 120
+
+			// 告诉平行光需要开启阴影投射
+			light.castShadow = true
+			scene.add(light)
+
+			whiteBall = new THREE.Mesh(
+				new THREE.SphereBufferGeometry(100, 16, 8),
+				new THREE.MeshBasicMaterial({ color: 0x00FFFF, wireframe: true })
+			);
+			scene.add(whiteBall);
+
+			//绿色球 ，相对于白球 定位
+			var greenBall = new THREE.Mesh(
+				new THREE.SphereBufferGeometry(50, 16, 8),
+				new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
+			);
+			greenBall.position.y = 150;
+			whiteBall.add(greenBall);
+
+			// 蓝色球是添加到相机上的，所以位置是相对相机设置的
+			var blueBall = new THREE.Mesh(
+				new THREE.SphereBufferGeometry(5, 16, 8),
+				new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true })
+			);
+			blueBall.position.y = 20;
+			blueBall.position.z = 160;
+			// scene.add(blueBall)
+			cameraRig.add(blueBall);
+
+			// create a render and set the size
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+			renderer.setClearColor(new THREE.Color(0xEEEEEE));
+			container.appendChild(renderer.domElement);
+			renderer.autoClear = false;
+
+			//
+		}
+		//
+		function animate() {
+			 requestAnimationFrame(animate);
+			render();
+		}
+
+
+		function render() {
+
+			var r = Date.now() * 0.0005;
+
+			whiteBall.position.x = 400 * Math.cos(r);
+			// whiteBall.position.z = 700 * Math.sin(r);
+			whiteBall.position.y = 400 * Math.sin(r);
+
+			cameraRig.lookAt(whiteBall.position);
+
+			renderer.clear();
+
+			cameraPerspectiveHelper.visible = false;
+			renderer.setViewport(0, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
+			renderer.render(scene, cameraPerspective);
+
+			cameraPerspectiveHelper.visible = true;
+			renderer.setViewport(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
+			renderer.render(scene, camera);
+
+		}
+
+
+	</script>
+
+</body>
+
+</html>

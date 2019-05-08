@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>three.js webgl - cameras</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		body {
+			color: #808080;
+			font-family: Monospace;
+			font-size: 13px;
+			text-align: center;
+
+			background-color: #000;
+			margin: 0px;
+			overflow: hidden;
+		}
+
+		#info {
+			position: absolute;
+			top: 5px;
+			width: 100%;
+			z-index: 100;
+		}
+
+		a {
+			color: #0080ff;
+		}
+
+		b {
+			color: lightgreen
+		}
+	</style>
+</head>
+
+<body>
+	<div id="info"><a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - cameras<br />
+		<b>O</b> orthographic <b>P</b> perspective
+	</div>
+
+	<script src="../build/three.js"></script>
+	<script src="./js/controls/OrbitControls.js"></script>
+	<!-- <script src="js/libs/stats.min.js"></script> -->
+
+	<script>
+
+		var SCREEN_WIDTH = window.innerWidth;
+		var SCREEN_HEIGHT = window.innerHeight;
+		var aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+
+		var container;
+		var camera, scene, renderer, whiteBall;
+		var cameraRig, activeCamera, activeHelper;
+		var cameraPerspective;
+		var cameraPerspectiveHelper;
+		var frustumSize = 600;
+
+		init();
+		animate();
+
+		function init() {
+
+			container = document.createElement('div');
+			document.body.appendChild(container);
+
+			scene = new THREE.Scene();
+
+
+			//
+			// 远距离相机，查看整个场景，相机角度
+			camera = new THREE.PerspectiveCamera(50, 0.5 * aspect, 1, 10000);
+			camera.position.x = 0;
+			camera.position.y = 0;
+			camera.position.z = 1200;
+
+			//查看模型的相机
+			cameraPerspective = new THREE.PerspectiveCamera(50, 0.5 * aspect, 150, 1000);
+			cameraPerspective.position.set(100,100,100)
+			cameraPerspectiveHelper = new THREE.CameraHelper(cameraPerspective);
+			scene.add(cameraPerspectiveHelper);
+
+			//
+
+			activeCamera = cameraPerspective;
+			activeHelper = cameraPerspectiveHelper;
+
+
+			// counteract different front orientation of cameras vs rig
+
+			cameraPerspective.rotation.y = Math.PI;
+
+			scene.add(new THREE.AxisHelper(50))
+
+			cameraRig = new THREE.Group();
+
+			cameraRig.add(cameraPerspective);
+
+			scene.add(cameraRig);
+
+			//
+
+			whiteBall = new THREE.Mesh(
+				new THREE.SphereBufferGeometry(100, 16, 8),
+				new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true })
+			);
+			scene.add(whiteBall);
+
+			//绿色球 ，相对于白球 定位
+			var greenBall = new THREE.Mesh(
+				new THREE.SphereBufferGeometry(50, 16, 8),
+				new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
+			);
+			greenBall.position.y = 150;
+			whiteBall.add(greenBall);
+
+			// 蓝色球是添加到相机上的，所以位置是相对相机设置的
+			blueBall = new THREE.Mesh(
+				new THREE.SphereBufferGeometry(5, 16, 8),
+				new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true })
+			);
+			// blueBall.position.z = 160;
+			blueBall.position.set(100,100,260)
+			cameraRig.add(blueBall);
+		
+			//
+
+			var geometry = new THREE.BufferGeometry();
+			var vertices = [];
+
+			for (var i = 0; i < 10000; i++) {
+
+				vertices.push(THREE.Math.randFloatSpread(2000)); // x
+				vertices.push(THREE.Math.randFloatSpread(2000)); // y
+				vertices.push(THREE.Math.randFloatSpread(2000)); // z
+
+			}
+
+			geometry.addAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+			var particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0x888888 }));
+			scene.add(particles);
+
+			//
+
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+			container.appendChild(renderer.domElement);
+
+			renderer.autoClear = false;
+
+			//   var controls = new THREE.OrbitControls(cameraPerspective, renderer.domElement)
+			
+			//
+		}
+		//
+		function animate() {
+
+	    requestAnimationFrame(animate);
+
+			render();
+		 
+
+		}
+
+
+		function render() {
+
+			r = Date.now() * 0.0005;
+			// r = 100
+			whiteBall.position.x = 700 * Math.cos(r);
+			whiteBall.position.z = 700 * Math.sin(r);
+			whiteBall.position.y = 700 * Math.sin(r);
+
+			// whiteBall.children[0].position.x = 70 * Math.cos(2 * r);
+			// whiteBall.children[0].position.z = 70 * Math.sin(r);
+
+			if (activeCamera === cameraPerspective) {
+
+				cameraPerspective.fov = 35 + 30 * Math.sin(0.5 * r);
+				// cameraPerspective.far = whiteBall.position.length();
+				// cameraPerspective.updateProjectionMatrix();
+
+				// cameraPerspectiveHelper.update();
+				cameraPerspectiveHelper.visible = true;
+
+			 
+
+			} 
+
+		  cameraRig.lookAt(whiteBall.position);
+
+			renderer.clear();
+
+			activeHelper.visible = false;
+
+			// renderer.setViewport(0, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
+			// renderer.render(scene, activeCamera);
+
+			activeHelper.visible = true;
+
+			// renderer.setViewport(0, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
+			renderer.render(scene, camera);
+
+		}
+
+
+	</script>
+
+</body>
+
+</html>
