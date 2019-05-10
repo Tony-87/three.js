@@ -25,8 +25,10 @@
     <!-- Javascript code that runs our Three.js examples -->
     <script type="text/javascript">
 
-        var scene, camera, renderer;
-        var cameraSky, orbitControl, cameraPerspectiveHelper, deviceControl;
+        var scene, camera, renderer,
+            cameraHelper, cameraGroup,
+            cameraSky, cameraSkyHelper,
+            orbitControl, deviceControl;
         init();
         animate();
         // once everything is loaded, we run our Three.js stuff.
@@ -37,20 +39,37 @@
 
             // create a camera, which defines where we're looking at.
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
-            camera.position.set(-10, 0, 50)
-            // camera.position.set(0,0,0) 
+            cameraHelper = new THREE.CameraHelper(camera)
+            scene.add(cameraHelper)
+            // camera.position.set(-10, 0, 0)
+            // camera.lookAt(0,0,0)
+            // scene.add(camera)
 
-            scene.add(camera)
+            cameraGroup = new THREE.Group();
+            cameraGroup.position.set(-10, 10, 20)
+            var groupAxesHelper = new THREE.AxesHelper(100)
+            cameraGroup.add(groupAxesHelper)
 
-            cameraPerspectiveHelper = new THREE.CameraHelper(camera)
-            scene.add(cameraPerspectiveHelper)
-            cameraPerspectiveHelper.visible = true
+            cameraGroup.add(camera)
+            // cameraGroup.lookAt(-20, 20, 60)
+            // camera.rotation.y =  Math.PI// Y逆时针90度
+            scene.add(cameraGroup)
 
+           
 
-            cameraSky = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
-            cameraSky.position.set(0, 200, 0)
+            cameraSky = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 5, 10000);
+            cameraSky.position.set(-100, 100, 0)
             cameraSky.lookAt(0, 0, 0)
+            // cameraSky.rotation.y = -0.5 * Math.PI;
             scene.add(cameraSky)
+
+            cameraSkyHelper = new THREE.CameraHelper(cameraSky)
+            scene.add(cameraSkyHelper)
+
+            // cameraSky2 = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+            // cameraSky2.position.set(0, 100, 0)
+            // cameraSky2.lookAt(0, 0, 0)
+            // scene.add(cameraSky2)
 
             // create a render and set the size
             renderer = new THREE.WebGLRenderer();
@@ -112,8 +131,8 @@
             // add the output of the renderer to the html element
             document.getElementById("WebGL-output").appendChild(renderer.domElement);
 
-            orbitControl = new THREE.OrbitControls(camera, renderer.domElement)
-            deviceControl = new THREE.DeviceOrientationControls(cameraSky)
+            orbitControl = new THREE.OrbitControls(cameraGroup, renderer.domElement)
+            // deviceControl = new THREE.DeviceOrientationControls(cameraGroup)
         }
 
 
